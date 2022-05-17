@@ -24,6 +24,9 @@ public:
 		int CurrentAmmo;
 
 	UPROPERTY(EditDefaultsOnly)
+		FVector TraceDirection;
+
+	UPROPERTY(EditDefaultsOnly)
 		class UClass* ProjectileType;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Audio)
@@ -58,11 +61,17 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess), Category = "Weapon")
 		class USkeletalMeshComponent* SkeletalMesh;
 
+	UPROPERTY(EditAnywhere, Category = "Trace")
+		float TraceDistance;
+
 	AWeapon();
 
 	virtual void PostInitializeComponents() override;
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
+
+	UFUNCTION()
+		void SetFireDirection();
 
 	UFUNCTION()
 		void Fire();
@@ -71,9 +80,7 @@ protected:
 
 private:
 	class UArrowComponent* Muzzle;
-
 	FTimerHandle AttackTimer;
 
-/////////////////////////////////////////////////////////////////////
 	void ClearAttackTimer();
 };

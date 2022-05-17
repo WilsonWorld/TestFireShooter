@@ -2,6 +2,7 @@
 // Test Fire is a simple 3D shooter created by Wilson Worlds, intended to build familiarity with the unreal engine and game design for 'Shooters'. June 22nd, 2021.
 
 #include "TestFire/Items/Weapon/Weapon.h"
+#include "TestFire/Items/Weapon/Projectile.h"
 #include "TestFire/Characters/TestFireCharacter.h"
 
 #include "Components/ArrowComponent.h"
@@ -20,6 +21,8 @@ AWeapon::AWeapon() :
 	AttackRate = 10.0f;
 	MaxAmmo = 30.0f;
 	CurrentAmmo = -1;
+	TraceDistance = 10000.0f;
+	TraceDirection = GetActorForwardVector();
 
 	// Set the Mesh
 	SkeletalMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("WeaponMesh"));
@@ -155,10 +158,56 @@ void AWeapon::PlayProjectileEffects()
 	}
 }
 
+void AWeapon::SetFireDirection()
+{
+	FVector CamLoc;
+	FRotator CamRot;
+	GetWorld()->GetFirstPlayerController()->GetPlayerViewPoint(CamLoc, CamRot);
+
+	// First Raycast
+	FVector Start = CamLoc;
+	FVector End = ((CamRot.Vector() * TraceDistance) + Start);
+	FHitResult HitResult;
+	TArray<AActor*> ActorsToIgnore;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ATestFireCharacter::StaticClass(), ActorsToIgnore);
+
+	bool bHit = UKismetSystemLibrary::LineTraceSingle(this, Start, End, UEngineTypes::ConvertToTraceType(ECC_Camera),
+		false, ActorsToIgnore, EDrawDebugTrace::ForDuration, HitResult, true, FLinearColor::Yellow, FLinearColor::White, 0.1f);
+
+	if (bHit)
+	{
+		TraceDirection = HitResult.ImpactPoint;
+	}
+	else
+	{
+		TraceDirection = End;
+	}
+
+	// Second Raycast
+	FVector Start2 = GetActorLocation();
+	FVector End2 = ((TraceDirection - Start2) * TraceDistance);
+	FHitResult HitResult2;
+	TArray<AActor*> ActorsToIgnore2;
+	ActorsToIgnore2 = ActorsToIgnore;
+
+	bool bHit2 = UKismetSystemLibrary::LineTraceSingle(this, Start2, End2, UEngineTypes::ConvertToTraceType(ECC_Camera),
+		false, ActorsToIgnore2, EDrawDebugTrace::ForDuration, HitResult2, true, FLinearColor::Yellow, FLinearColor::White, 0.1f);
+
+	if (bHit2)
+	{
+		TraceDirection = HitResult2.ImpactPoint;
+	}
+	else
+	{
+		TraceDirection = End2;
+	}
+}
+
 void AWeapon::Fire()
 {
 	if (CurrentAmmo > 0)
 	{
+		SetFireDirection();
 		SpawnProjectile();
 		PlayProjectileEffects();
 		CurrentAmmo--;
@@ -171,7 +220,9 @@ void AWeapon::SpawnProjectile()
 	SpawnParams.Instigator = Cast<APawn>(GetOwner());
 	FTransform Transform = Muzzle->GetComponentToWorld();
 
-	GetWorld()->SpawnActor<AActor>(ProjectileType, Transform.GetLocation(), Transform.GetRotation().Rotator(), SpawnParams);
+	AProjectile* projectile = GetWorld()->SpawnActor<AProjectile>(ProjectileType, Transform.GetLocation(), Transform.GetRotation().Rotator(), SpawnParams);
+
+	projectile->SetMovementDirection(TraceDirection);
 }
 
 void AWeapon::ClearAttackTimer()

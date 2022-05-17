@@ -2,8 +2,10 @@
 // Test Fire is a simple 3D shooter created by Wilson Worlds, intended to build familiarity with the unreal engine and game design for 'Shooters'. June 22nd, 2021.
 
 #include "Projectile.h"
+#include "TestFire/Characters/TestFireCharacter.h"
 
 #include "Kismet/GameplayStatics.h"
+#include "Kismet/KismetSystemLibrary.h"
 
 AProjectile::AProjectile()
 {
@@ -13,6 +15,7 @@ AProjectile::AProjectile()
 	Damage = 10.0f;
 	Speed = 4000.0f;
 	LifeTime = 2.0f;
+	MovementDirection = GetActorForwardVector() + GetActorLocation();
 }
 
 void AProjectile::PostInitializeComponents()
@@ -35,13 +38,10 @@ void AProjectile::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	FVector CamLoc;
-	FRotator CamRot;
-	GetWorld()->GetFirstPlayerController()->GetPlayerViewPoint(CamLoc, CamRot);
-
 	// Move the projectile in a forward direction
 	FVector Location = GetActorLocation();
-	Location += CamRot.Vector() * Speed * DeltaTime;
+	FVector Direction = MovementDirection - Location;
+	Location += Direction.GetSafeNormal() * Speed * DeltaTime;
 	SetActorLocation(Location, true);
 }
 
@@ -59,6 +59,11 @@ void AProjectile::OnActorHit(AActor* Self, AActor* Other, FVector NormalImpulse,
 	}
 
 	Destroy();
+}
+
+void AProjectile::SetMovementDirection(FVector dir)
+{
+	MovementDirection = dir;
 }
 
 void AProjectile::DestroySelf()

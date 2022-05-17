@@ -22,8 +22,13 @@ public:
 	UPROPERTY(EditDefaultsOnly)
 		float LifeTime;
 
+	UPROPERTY(EditDefaultsOnly)
+		FVector MovementDirection;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Effects)
 		UParticleSystem* ImpactFX;
+
+	void SetMovementDirection(FVector dir);
 
 protected:
 	UPROPERTY(EditDefaultsOnly, Category = Damage)
