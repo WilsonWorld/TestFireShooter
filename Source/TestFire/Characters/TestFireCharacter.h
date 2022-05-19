@@ -7,15 +7,14 @@
 #include "GameFramework/Character.h"
 #include "TestFireCharacter.generated.h"
 
-
 UENUM(BlueprintType)
 namespace ECharacterCameraMode
 {
 	enum Type
 	{
-		ThirdPersonDefault			UMETA(DisplayName = "Third Person Default"),
+		ThirdPersonDefault				UMETA(DisplayName = "Third Person Default"),
 		ThirdPersonOverShoulder		UMETA(DisplayName = "Third Person Shoulder"),
-		COUNT						UMETA(Hidden)
+		COUNT								UMETA(Hidden)
 	};
 }
 
@@ -59,13 +58,9 @@ public:
 		class AWeapon* GetCurrentWeapon();
 
 	void SetGrenades(uint8 NumGrenades);
-
 	void PullTrigger();
 	void ReleaseTrigger();
-
 	void Interact();
-
-	AActor* RayCast_GetActor();
 
 	/* Returns SkeletalMesh subobject */
 	FORCEINLINE class UInventoryComponent* GetInventoryComponent() const { return InventoryComponent; }
@@ -89,25 +84,26 @@ protected:
 		class USphereComponent* PickupSphereComponent;
 
 	ATestFireCharacter();
-
 	virtual void PostInitializeComponents() override;
-	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
 
 	UFUNCTION()
 		void TakeAnyDamage(AActor* damagedActor, float Damage, const class UDamageType* damageType, class AController* InstigatedBy, AActor* damageCauser);
 
 	UFUNCTION()
+		void StartReload();
+
+	UFUNCTION()
+		void ReloadWeapon();
+
+	UFUNCTION()
+		void ClearReloadTimer();
+
+	UFUNCTION()
 		void NextWeapon();
 
 	UFUNCTION()
 		void PrevWeapon();
-
-	UFUNCTION()
-		void DropWeapon();
-
-	UFUNCTION()
-		void ReloadWeapon();
 
 	UFUNCTION()
 		void ThrowGrenade();
@@ -122,12 +118,8 @@ protected:
 		void EndAndExitGame();
 
 	void CycleCamera();
-
 	void SetCameraMode(ECharacterCameraMode::Type newCameraMode);
-
 	void UpdateForCameraMode();
-
-	//On Death Function
 
 	/** Base turn rate, in deg/sec. Other scaling may affect final turn rate. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Camera)
@@ -154,19 +146,17 @@ protected:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 private:
-	/** Camera boom positioning the camera behind the character */
+	/** Camera boom positioning the follow camera behind the character */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 		class USpringArmComponent* CameraBoom;
 
-	/** Follow camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 		class UCameraComponent* FollowCamera;
 
-	/** Over the shoulder camera boom, positioning the camera behind the character's shoulder */
+	/** Over the shoulder camera boom, positioning the shoulder camera behind the character's shoulder */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 		class USpringArmComponent* ShoulderCameraBoom;
 
-	/** Over the shoulder camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 		class UCameraComponent* ShoulderCamera;
 
@@ -175,8 +165,9 @@ private:
 
 	class USkeletalMeshComponent* SkeletalMesh;
 	class UTestFireCharacterAnimation* AnimationInstance;
-
+	FTimerHandle ReloadTimer;
+	float ReloadTime;
 	bool bIsFiring;
-	bool bIsHolstered;
+	bool bIsReloading;
 };
 

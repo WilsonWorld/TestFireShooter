@@ -1,5 +1,5 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
-// Test Fire is a simple 3D shooter created by Wilson Worlds, intended to build familiarity with the unreal engine and game design for 'Shooters'. June 22nd, 2021.
+// Test Fire is a simple 3D shooter created by Wilson World Games, intended to build familiarity with the unreal engine and game design for 'Shooters'. June 22nd, 2021.
 
 #include "TestFireCharacter.h"
 #include "TestFire/Characters/TestFireCharacterAnimation.h"
@@ -20,7 +20,7 @@
 #include "DrawDebugHelpers.h"
 #include "Kismet/GameplayStatics.h"
 
-//////////////////////////////////////////////////////////////////////////
+
 ATestFireCharacter::ATestFireCharacter() :
 	SkeletalMesh(nullptr),
 	AnimationInstance(nullptr)
@@ -79,49 +79,37 @@ ATestFireCharacter::ATestFireCharacter() :
 	PickupSphereComponent->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	PickupSphereComponent->SetCollisionProfileName("OverlapAll");
 
-	// Inventory
+	// Custom Compoents
 	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>("Inventory");
-
-	// Slow Time
 	SlowTimeComponent = CreateDefaultSubobject<USlowTimeComponent>("TimeControl");
 
 	// Addition character properties
 	CurrentWeapon = nullptr;
-
 	MaxInteractDistance = 200.0f;
 	MaxHealth = 100.0f;
 	CurrentHealth = MaxHealth;
+	ReloadTime = 2.3f;
 	Score = 0;
 	CurrentExplosivesCount = 0;
 	MaxExplosivesCount = 5;
-
 	CameraModeEnum = ECharacterCameraMode::ThirdPersonDefault;
-
 	bIsFiring = false;
-	bIsHolstered = false;
+	bIsReloading = false;
 
 	// Trigger function to take damage when struck by a damage event causing actor
 	OnTakeAnyDamage.AddDynamic(this, &ATestFireCharacter::TakeAnyDamage);
-
 }
 
 void ATestFireCharacter::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
 
-	// Retrieve the skeletal mesh
 	SkeletalMesh = GetMesh();
-	if (SkeletalMesh)
-	{
+	if (SkeletalMesh) {
 		AnimationInstance = Cast<UTestFireCharacterAnimation>(SkeletalMesh->GetAnimInstance());
 	}
 
 	UpdateForCameraMode();
-}
-
-void ATestFireCharacter::BeginPlay()
-{
-	Super::BeginPlay();
 }
 
 void ATestFireCharacter::Tick(float DeltaTime)
@@ -131,8 +119,10 @@ void ATestFireCharacter::Tick(float DeltaTime)
 	const bool bHasWeapon = CurrentWeapon != nullptr;
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 
-	if (CurrentHealth <= 0)
-	{
+	if (CurrentHealth <= 0) {
+		if (CurrentWeapon)
+			CurrentWeapon->UnEquip();
+
 		Destroy();
 	}
 }
@@ -140,85 +130,109 @@ void ATestFireCharacter::Tick(float DeltaTime)
 void ATestFireCharacter::TakeAnyDamage(AActor* damagedActor, float Damage, const UDamageType* damageType, AController* InstigatedBy, AActor* damageCauser)
 {
 	GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Orange, FString::Printf(TEXT("taken %.2f damage"), Damage));
-
 	CurrentHealth -= Damage;
 }
 
+// Starts firing the weapon
+void ATestFireCharacter::PullTrigger()
+{
+	if (CurrentWeapon == nullptr || bIsReloading == true)
+		return;
+
+	FVector CamLoc;
+	FRotator CamRot;
+	Controller->GetPlayerViewPoint(CamLoc, CamRot);
+
+	// Grab the player's rotation and change their Yaw to match the camera's yaw facing.
+	FRotator PlayerRot = GetActorRotation();
+	PlayerRot.Yaw = CamRot.Yaw;
+	SetActorRotation(PlayerRot);
+
+	CurrentWeapon->OnTriggerPull();
+	bIsFiring = true;
+}
+
+// Stops the weapon from firing
+void ATestFireCharacter::ReleaseTrigger()
+{
+	if (CurrentWeapon == nullptr)
+		return;
+
+	CurrentWeapon->OnTriggerRelease();
+	bIsFiring = false;
+}
+
+// Check if the weapon can be reloaded, then play reload effects before starting the reload timer
+void ATestFireCharacter::StartReload()
+{
+	if (CurrentWeapon == nullptr || bIsReloading == true || CurrentWeapon->CurrentAmmo == CurrentWeapon->MaxAmmo || InventoryComponent->GetStoredRifleAmmo() == 0)
+		return;
+
+	bIsReloading = true;
+	CurrentWeapon->PlayReloadEffects();
+	GetWorldTimerManager().SetTimer(ReloadTimer, this, &ATestFireCharacter::ReloadWeapon, ReloadTime, false);
+}
+
+// Grab ammo from the inventory storage to refill the current weapon back to max, if possible. Reset reload timer.
+void ATestFireCharacter::ReloadWeapon()
+{
+	if (CurrentWeapon == nullptr)
+		return;
+
+	uint16 AmmoToAdd = CurrentWeapon->MaxAmmo - CurrentWeapon->CurrentAmmo;
+
+	// Check if there is enough ammo for the reload in the player's inventory
+	if (InventoryComponent->GetStoredRifleAmmo() >= AmmoToAdd) {
+		InventoryComponent->RemoveAmmoFromRifleStorage(AmmoToAdd);
+		CurrentWeapon->CurrentAmmo += AmmoToAdd;
+	}
+	// Check if there is still ammo that can be added from the player's inventory
+	else if (InventoryComponent->GetStoredRifleAmmo() > 0 && InventoryComponent->GetStoredRifleAmmo() < AmmoToAdd) {
+		uint16 RemainingAmmo = InventoryComponent->GetStoredRifleAmmo();
+		InventoryComponent->RemoveAmmoFromRifleStorage(RemainingAmmo);
+		CurrentWeapon->CurrentAmmo += RemainingAmmo;
+	}
+
+	ClearReloadTimer();
+}
+
+// Reset the Reload Timer and set reloading as over
+void ATestFireCharacter::ClearReloadTimer()
+{
+	GetWorldTimerManager().ClearTimer(ReloadTimer);
+	bIsReloading = false;
+}
+
+// Cycles to the next inventory item if the player has a weapon
 void ATestFireCharacter::NextWeapon()
 {
 	if (CurrentWeapon)
-	{
 		CurrentWeapon->UnEquip();
-	}
-	InventoryComponent->NextInventoryItem();
 
+	InventoryComponent->NextInventoryItem();
 	CurrentWeapon = InventoryComponent->GetCurrentInventoryItem();
 
 	if (CurrentWeapon)
-	{
 		CurrentWeapon->Equip(this);
-	}
 }
 
+// Cycles to the previous inventory item if the player has a weapon
 void ATestFireCharacter::PrevWeapon()
 {
 	if (CurrentWeapon)
-	{
 		CurrentWeapon->UnEquip();
-	}
-	InventoryComponent->PrevInventoryItem();
 
+	InventoryComponent->PrevInventoryItem();
 	CurrentWeapon = InventoryComponent->GetCurrentInventoryItem();
 
 	if (CurrentWeapon)
-	{
 		CurrentWeapon->Equip(this);
-	}
 }
 
-void ATestFireCharacter::DropWeapon()
-{
-	/*
-	if (CurrentWeapon)
-	{
-		CurrentWeapon->Drop();
-	}
-	*/
-}
-
-void ATestFireCharacter::ReloadWeapon()
-{
-	if (CurrentWeapon)
-	{
-		uint16 AmmoToAdd = CurrentWeapon->MaxAmmo - CurrentWeapon->CurrentAmmo;
-
-		// Check ammo is being added before playing the sound effect
-		if (AmmoToAdd != 0 && InventoryComponent->GetStoredRifleAmmo() != 0)
-		{
-			CurrentWeapon->PlayReloadEffects();
-		}
-
-		// Check if there is enough ammo for the reload in the player's inventory
-		if (InventoryComponent->GetStoredRifleAmmo() >= AmmoToAdd)
-		{
-			InventoryComponent->RemoveAmmoFromRifleStorage(AmmoToAdd);
-			CurrentWeapon->CurrentAmmo += AmmoToAdd;
-		}
-		// Check if there is still ammo that can be added from the player's inventory
-		else if (InventoryComponent->GetStoredRifleAmmo() > 0 && InventoryComponent->GetStoredRifleAmmo() < AmmoToAdd)
-		{
-			uint16 RemainingAmmo = InventoryComponent->GetStoredRifleAmmo();
-
-			InventoryComponent->RemoveAmmoFromRifleStorage(RemainingAmmo);
-			CurrentWeapon->CurrentAmmo += RemainingAmmo;
-		}
-	}
-}
-
+// Spawns in a grenade and reduce the player's grenade count
 void ATestFireCharacter::ThrowGrenade()
 {
-	if (CurrentExplosivesCount > 0)
-	{
+	if (CurrentExplosivesCount > 0) {
 		// Spawn a gernade in front of the Player
 		FVector spawnLocation = GetActorLocation() + (GetControlRotation().Vector() * 100.0f) + (GetActorUpVector() * 50.0f);
 		FRotator spawnRotation = GetControlRotation();
@@ -229,43 +243,29 @@ void ATestFireCharacter::ThrowGrenade()
 	}
 }
 
-void ATestFireCharacter::StartSlowTime()
-{
-	SlowTimeComponent->OnSlowTimeStart();
-}
-
-void ATestFireCharacter::StopSlowTime()
-{
-	SlowTimeComponent->OnSlowTimeEnd();
-}
-
-void ATestFireCharacter::EndAndExitGame()
-{
-	APlayerController* OurPlayerControl = UGameplayStatics::GetPlayerController(this, 0);
-	UKismetSystemLibrary::QuitGame(this, OurPlayerControl, EQuitPreference::Quit, true);
-}
-
+// Increments the camera mode, resetting when hitting mode max
 void ATestFireCharacter::CycleCamera()
 {
-	if (CurrentWeapon)
-	{
-		int newCameraMode = (int)CameraModeEnum + 1;
+	if (CurrentWeapon == nullptr)
+		return;
 
-		if (newCameraMode >= ECharacterCameraMode::COUNT)
-		{
-			newCameraMode = ECharacterCameraMode::ThirdPersonDefault;
-		}
+	int newCameraMode = (int)CameraModeEnum + 1;
 
-		SetCameraMode((ECharacterCameraMode::Type)newCameraMode);
+	if (newCameraMode >= ECharacterCameraMode::COUNT) {
+		newCameraMode = ECharacterCameraMode::ThirdPersonDefault;
 	}
+
+	SetCameraMode((ECharacterCameraMode::Type)newCameraMode);
 }
 
+// Change cameras based on enum and updates the viewport
 void ATestFireCharacter::SetCameraMode(ECharacterCameraMode::Type newCameraMode)
 {
 	CameraModeEnum = newCameraMode;
 	UpdateForCameraMode();
 }
 
+// Changes the camera based on current camera mode
 void ATestFireCharacter::UpdateForCameraMode()
 {
 	switch(CameraModeEnum)
@@ -283,10 +283,56 @@ void ATestFireCharacter::UpdateForCameraMode()
 	}
 
 	APlayerController* OurPlayerControl = UGameplayStatics::GetPlayerController(this, 0);
-	if (OurPlayerControl)
-	{
+	if (OurPlayerControl) {
 		OurPlayerControl->SetViewTargetWithBlend(this, 0.25f, EViewTargetBlendFunction::VTBlend_EaseIn);
 	}
+}
+
+void ATestFireCharacter::Interact()
+{
+	// Grab all the actors with the pick up sphere's radius
+	TArray<AActor*> overlappingActors;
+	PickupSphereComponent->GetOverlappingActors(overlappingActors);
+
+	// If the actor has the Tag "Weapon", cast actor as weapon and add it to the inventory
+	for (int i = 0; i < overlappingActors.Num(); i++) {
+		if (overlappingActors[i]->ActorHasTag("Weapon")) {
+			AWeapon* Weapon = Cast<AWeapon>(overlappingActors[i]);
+			if (Weapon == nullptr)
+				return;
+
+			InventoryComponent->AddToInventory(Weapon);
+		}
+
+		// Check if the Actor is an "Ammo" Pickup, refill ammo to max capacity and detroy the pickup item
+		if (overlappingActors[i]->ActorHasTag("Ammo")) {
+			AAmmo* Ammo = Cast<AAmmo>(overlappingActors[i]);
+			if (Ammo == nullptr)
+				return;
+
+			InventoryComponent->AddAmmoToRifleStorage(Ammo->BulletCount);
+			Ammo->Destroy();
+		}
+
+		//Check if the Actor is a "Grenade" Pickup, increment grenade count if not at max already and destroys the pickup item
+		if (overlappingActors[i]->ActorHasTag("Grenade")) {
+			AGrenadePickup* Grenade = Cast<AGrenadePickup>(overlappingActors[i]);
+			if (Grenade == nullptr)
+				return;
+
+				if (CurrentExplosivesCount < MaxExplosivesCount){
+					CurrentExplosivesCount++;
+					Grenade->Destroy();
+				}
+		}
+	}
+}
+
+// Quickly ends the game for the user 
+void ATestFireCharacter::EndAndExitGame()
+{
+	APlayerController* OurPlayerControl = UGameplayStatics::GetPlayerController(this, 0);
+	UKismetSystemLibrary::QuitGame(this, OurPlayerControl, EQuitPreference::Quit, true);
 }
 
 AWeapon* ATestFireCharacter::GetCurrentWeapon()
@@ -299,112 +345,16 @@ void ATestFireCharacter::SetGrenades(uint8 NumGrenades)
 	CurrentExplosivesCount = NumGrenades;
 }
 
-void ATestFireCharacter::PullTrigger()
+void ATestFireCharacter::StartSlowTime()
 {
-	if (CurrentWeapon)
-	{
-		// Grab the camera information and store in local variables
-		FVector CamLoc;
-		FRotator CamRot;
-		Controller->GetPlayerViewPoint(CamLoc, CamRot);
-
-		// Grab the player's rotation and change their Yaw to match the camera's yaw facing.
-		FRotator PlayerRot = GetActorRotation();
-		PlayerRot.Yaw = CamRot.Yaw;
-
-		// Change the player's rotation to ensure that the fired projectile does not hit the player and aims the weapon in the direction the shots are fired
-		SetActorRotation(PlayerRot);
-
-		CurrentWeapon->OnTriggerPull();
-		bIsFiring = true;
-	}
+	SlowTimeComponent->OnSlowTimeStart();
 }
 
-void ATestFireCharacter::ReleaseTrigger()
+void ATestFireCharacter::StopSlowTime()
 {
-	if (CurrentWeapon)
-	{
-		CurrentWeapon->OnTriggerRelease();
-		bIsFiring = false;
-	}
+	SlowTimeComponent->OnSlowTimeEnd();
 }
 
-void ATestFireCharacter::Interact()
-{
-	TArray<AActor*> overlappingActors;
-
-	PickupSphereComponent->GetOverlappingActors(overlappingActors);
-
-	for (int i = 0; i < overlappingActors.Num(); i++)
-	{
-		// If the actor has the Tag "Weapon"
-		if (overlappingActors[i]->ActorHasTag("Weapon"))
-		{
-			AWeapon* Weapon = Cast<AWeapon>(overlappingActors[i]);
-			if (Weapon)
-			{
-				InventoryComponent->AddToInventory(Weapon);
-			}
-		}
-
-		if (overlappingActors[i]->ActorHasTag("Ammo"))
-		{
-			// Check if the Actor is an Ammo Pickup
-			AAmmo* Ammo = Cast<AAmmo>(overlappingActors[i]);
-			if (Ammo)
-			{
-				// Refill ammo to max capacity and detroy the pickup item
-				InventoryComponent->AddAmmoToRifleStorage(Ammo->BulletCount);
-				Ammo->Destroy();
-			}
-		}
-
-		if (overlappingActors[i]->ActorHasTag("Grenade"))
-		{
-			//Check if the Actor is a Grenade Pickup
-			AGrenadePickup* Grenade = Cast<AGrenadePickup>(overlappingActors[i]);
-			if (Grenade)
-			{
-				if (CurrentExplosivesCount < MaxExplosivesCount)
-				{
-					CurrentExplosivesCount++;
-					Grenade->Destroy();
-				}
-			}
-		}
-	}
-}
-
-AActor* ATestFireCharacter::RayCast_GetActor()
-{
-	if (Controller)
-	{
-		FVector PlayerLoc = this->GetActorLocation();
-		FVector CamLoc;
-		FRotator CamRot;
-		Controller->GetPlayerViewPoint(CamLoc, CamRot);
-
-		FVector StartTrace = PlayerLoc + FVector(0.0f, 0.0f, 50.0f);
-		FVector Direction = CamRot.Vector();
-		FVector EndTrace = StartTrace + Direction * MaxInteractDistance;
-
-		DrawDebugLine(GetWorld(), StartTrace, EndTrace, FColor::Green, false, 2.0f, 0, 1.0f);
-
-		FHitResult Hit(ForceInit);
-		FCollisionQueryParams TraceParams;
-		TraceParams.AddIgnoredActor(this);
-
-		GetWorld()->LineTraceSingleByChannel(Hit, StartTrace, EndTrace, ECC_WorldStatic, TraceParams);
-
-		return Hit.GetActor();
-	}
-	else
-	{
-		return nullptr;
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
 void ATestFireCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent)
 {
 	// Set up gameplay key bindings
@@ -415,12 +365,10 @@ void ATestFireCharacter::SetupPlayerInputComponent(class UInputComponent* Player
 
 	PlayerInputComponent->BindAction("ThrowGrenade", IE_Pressed, this, &ATestFireCharacter::ThrowGrenade);
 
-	PlayerInputComponent->BindAction("Reload", IE_Pressed, this, &ATestFireCharacter::ReloadWeapon);
+	PlayerInputComponent->BindAction("Reload", IE_Pressed, this, &ATestFireCharacter::StartReload);
 
 	PlayerInputComponent->BindAction("NextWeapon", IE_Pressed, this, &ATestFireCharacter::NextWeapon);
 	PlayerInputComponent->BindAction("PrevWeapon", IE_Pressed, this, &ATestFireCharacter::PrevWeapon);
-
-	PlayerInputComponent->BindAction("DropWeapon", IE_Pressed, this, &ATestFireCharacter::DropWeapon);
 
 	PlayerInputComponent->BindAction("SlowTime", IE_Pressed, this, &ATestFireCharacter::StartSlowTime);
 	PlayerInputComponent->BindAction("SlowTimeStop", IE_Pressed, this, &ATestFireCharacter::StopSlowTime);
