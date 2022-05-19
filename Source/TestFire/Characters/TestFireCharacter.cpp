@@ -239,6 +239,12 @@ void ATestFireCharacter::StopSlowTime()
 	SlowTimeComponent->OnSlowTimeEnd();
 }
 
+void ATestFireCharacter::EndAndExitGame()
+{
+	APlayerController* OurPlayerControl = UGameplayStatics::GetPlayerController(this, 0);
+	UKismetSystemLibrary::QuitGame(this, OurPlayerControl, EQuitPreference::Quit, true);
+}
+
 void ATestFireCharacter::CycleCamera()
 {
 	if (CurrentWeapon)
@@ -423,6 +429,8 @@ void ATestFireCharacter::SetupPlayerInputComponent(class UInputComponent* Player
 
 	InputComponent->BindAction("ToggleCamera", IE_Pressed, this, &ATestFireCharacter::CycleCamera);
 	InputComponent->BindAction("ToggleCamera", IE_Released, this, &ATestFireCharacter::CycleCamera);
+
+	PlayerInputComponent->BindAction("QuitGame", IE_Pressed, this, &ATestFireCharacter::EndAndExitGame);
 
 	// Default Unreal provided controls for a third person character
 	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ACharacter::Jump);

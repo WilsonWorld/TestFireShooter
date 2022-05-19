@@ -17,10 +17,12 @@ ABasicTurret::ABasicTurret()
 
 	// Addition character properties
 	Health = 100.0f;
+	YawValue = 0.5f;
 	PointValue = 100;
 	ReloadTime = 2.0f;
 	bIsReloading = false;
 	bIsActive = false;
+	bRightRotation = true;
 
 	// Mesh
 	BaseTurretMesh = CreateDefaultSubobject<UStaticMeshComponent>("BaseTurretMesh");
@@ -68,6 +70,14 @@ void ABasicTurret::BeginPlay()
 void ABasicTurret::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	if (bRightRotation == true) {
+		RotateTurretRight();
+	}
+	else {
+		RotateTurretLeft();
+	}
+
 
 	if (bIsActive == false || bIsReloading == true)
 		return;
@@ -155,6 +165,28 @@ void ABasicTurret::PlayProjectileEffects()
 	if (ProjectileFX)
 	{
 		UGameplayStatics::SpawnEmitterAtLocation(this, ProjectileFX, GetMuzzleLocation());
+	}
+}
+
+void ABasicTurret::RotateTurretRight()
+{
+	FRotator newRotation = FRotator(0.0f, YawValue, 0.f);
+	TurretMesh->AddLocalRotation(newRotation, false, 0, ETeleportType::None);
+
+	if (TurretMesh->GetComponentRotation().Equals(FRotator(0.0f, -90.0f, 0.0f), 0.1f))
+	{
+		bRightRotation = false;
+	}
+}
+
+void ABasicTurret::RotateTurretLeft()
+{
+	FRotator newRotation = FRotator(0.0f, -YawValue, 0.f);
+	TurretMesh->AddLocalRotation(newRotation, false, 0, ETeleportType::None);
+
+	if (TurretMesh->GetComponentRotation().Equals(FRotator(0.0f, 90.0f, 0.0f), 0.1f))
+	{
+		bRightRotation = true;
 	}
 }
 

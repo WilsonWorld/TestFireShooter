@@ -118,6 +118,9 @@ protected:
 	UFUNCTION()
 		void StopSlowTime();
 
+	UFUNCTION()
+		void EndAndExitGame();
+
 	void CycleCamera();
 
 	void SetCameraMode(ECharacterCameraMode::Type newCameraMode);

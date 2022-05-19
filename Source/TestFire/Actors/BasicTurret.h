@@ -18,13 +18,19 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TurretMesh")
 		class UStaticMeshComponent* TurretMesh;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Pathing", meta = (AllowPrivateAccess))
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Turret", meta = (AllowPrivateAccess))
 		class UBoxComponent* ActivationBox;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TurretHealth")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Turret")
 		float Health;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TurretValue")
+	UPROPERTY(EditAnywhere, Category = "Turret")
+		float YawValue;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Turret")
+		float ReloadTime;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Turret")
 		uint8 PointValue;
 
 	UPROPERTY(EditDefaultsOnly)
@@ -47,9 +53,9 @@ protected:
 	class UArrowComponent* Muzzle;
 
 	FTimerHandle ReloadTimerHandle;
-	float ReloadTime;
 	bool bIsReloading;
 	bool bIsActive;
+	bool bRightRotation;
 
 	ABasicTurret();
 
@@ -57,6 +63,8 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
 
+	void RotateTurretRight();
+	void RotateTurretLeft();
 	void ClearReloadTimer();
 
 	UFUNCTION()
