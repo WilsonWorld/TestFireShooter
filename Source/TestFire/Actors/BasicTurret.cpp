@@ -1,10 +1,6 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "TestFire/Actors/BasicTurret.h"
 #include "TestFire/Characters/TestFireCharacter.h"
 #include "TestFire/Items/Weapon/Projectile.h"
-
 #include "Components/ArrowComponent.h"
 #include "Components/BoxComponent.h"
 #include "Kismet/GamePlayStatics.h"
@@ -24,14 +20,14 @@ ABasicTurret::ABasicTurret()
 	bIsActive = false;
 	bRightRotation = true;
 
-	// Mesh
+	// Meshs
 	BaseTurretMesh = CreateDefaultSubobject<UStaticMeshComponent>("BaseTurretMesh");
 	SetRootComponent(BaseTurretMesh);
 
 	TurretMesh = CreateDefaultSubobject<UStaticMeshComponent>("TurretMesh");
 	TurretMesh->SetupAttachment(RootComponent);
 
-	// Target 1 Component defaults setup
+	// Trigger Box Component setup
 	ActivationBox = CreateDefaultSubobject<UBoxComponent>("Activate Box");
 	ActivationBox->SetSimulatePhysics(false);
 	ActivationBox->SetCollisionProfileName("OverlapAllDynamic");
@@ -173,7 +169,7 @@ void ABasicTurret::RotateTurretRight()
 	FRotator newRotation = FRotator(0.0f, YawValue, 0.f);
 	TurretMesh->AddLocalRotation(newRotation, false, 0, ETeleportType::None);
 
-	if (TurretMesh->GetComponentRotation().Equals(FRotator(0.0f, -90.0f, 0.0f), 0.1f))
+	if (TurretMesh->GetComponentRotation().Equals(FRotator(0.0f, -120.0f, 0.0f), 0.1f))
 	{
 		bRightRotation = false;
 	}
@@ -184,7 +180,7 @@ void ABasicTurret::RotateTurretLeft()
 	FRotator newRotation = FRotator(0.0f, -YawValue, 0.f);
 	TurretMesh->AddLocalRotation(newRotation, false, 0, ETeleportType::None);
 
-	if (TurretMesh->GetComponentRotation().Equals(FRotator(0.0f, 90.0f, 0.0f), 0.1f))
+	if (TurretMesh->GetComponentRotation().Equals(FRotator(0.0f, 120.0f, 0.0f), 0.1f))
 	{
 		bRightRotation = true;
 	}

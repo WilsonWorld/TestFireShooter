@@ -120,6 +120,7 @@ protected:
 	void CycleCamera();
 	void SetCameraMode(ECharacterCameraMode::Type newCameraMode);
 	void UpdateForCameraMode();
+	void DestroySelf();
 
 	/** Base turn rate, in deg/sec. Other scaling may affect final turn rate. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Camera)

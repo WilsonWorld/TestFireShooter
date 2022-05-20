@@ -1,6 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "Explosive.h"
 
 #include "Components/StaticMeshComponent.h"
@@ -12,7 +9,6 @@
 
 AExplosive::AExplosive()
 {
- 	// Set this actor to call Tick() every frame.
 	PrimaryActorTick.bCanEverTick = true;
 
 	// Additional Properties
@@ -59,10 +55,9 @@ void AExplosive::OnExplosion()
 {
 	PlayExplosionFX();
 	ExplosiveBlastComp->FireImpulse();
-
 	TArray<AActor*> HitActors = RayCastSphere_GetActors();
-	for (AActor* actor : HitActors)
-	{
+
+	for (AActor* actor : HitActors) {
 		UGameplayStatics::ApplyDamage(actor, BlastDamage, GetWorld()->GetFirstPlayerController(), this->GetOwner(), DamageClass);
 	}
 
@@ -72,20 +67,15 @@ void AExplosive::OnExplosion()
 void AExplosive::PlayExplosionFX()
 {
 	if (ExplosiveFX)
-	{
 		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ExplosiveFX, this->GetActorLocation());
-	}
 
 	if (ExplosionSound)
-	{
 		UGameplayStatics::PlaySoundAtLocation(GetWorld(), ExplosionSound, this->GetActorLocation());
-	}
 }
 
 void AExplosive::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector Impulse, const FHitResult& Hit)
 {
-	if (bHasImpacted == false)
-	{
+	if (bHasImpacted == false) {
 		bHasImpacted = true;
 		GetWorldTimerManager().SetTimer(FuseTimerHandle, this, &AExplosive::OnExplosion, FuseTime);
 	}
@@ -110,7 +100,5 @@ void AExplosive::BeginPlay()
 	Super::BeginPlay();
 
 	if (PinPullSound)
-	{
 		UGameplayStatics::PlaySoundAtLocation(GetWorld(), PinPullSound, GetActorLocation());
-	}
 }

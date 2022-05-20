@@ -1,4 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
 // Test Fire is a simple 3D shooter created by Wilson Worlds, intended to build familiarity with the unreal engine and game design for 'Shooters'. June 22nd, 2021.
 
 #pragma once
@@ -41,7 +40,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Effects)
 		UParticleSystem* FireProjectileFX;
 
-/////////////////////////////////////////////////////////////////////
 	void Equip(class ATestFireCharacter* Character);
 	void UnEquip();
 	void Drop();
@@ -65,10 +63,7 @@ protected:
 		float TraceDistance;
 
 	AWeapon();
-
 	virtual void PostInitializeComponents() override;
-	virtual void BeginPlay() override;
-	virtual void Tick(float DeltaTime) override;
 
 	UFUNCTION()
 		void SetFireDirection();

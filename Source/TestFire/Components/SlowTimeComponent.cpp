@@ -1,16 +1,9 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "SlowTimeComponent.h"
 #include "TestFire/TestFireController.h"
 #include "Kismet/GameplayStatics.h"
 
-
-// Sets default values for this component's properties
 USlowTimeComponent::USlowTimeComponent()
 {
-	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
-	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = true;
 
 	// Time change properties
@@ -20,11 +13,10 @@ USlowTimeComponent::USlowTimeComponent()
 	bTimeIsSlow = false;
 }
 
+// Slow the passage of time for the world
 void USlowTimeComponent::OnSlowTimeStart()
 {
-	if (CurrentSlowPoints > 0.0f)
-	{
-		// Slow the passage of time for the world
+	if (CurrentSlowPoints > 0.0f) {
 		APlayerController* Controller = UGameplayStatics::GetPlayerController(this, 0);
 		GetWorld()->GetWorldSettings()->SetTimeDilation(0.25f);
 		Controller->GetPawn()->CustomTimeDilation = 2.0f;
@@ -36,9 +28,9 @@ void USlowTimeComponent::OnSlowTimeStart()
 
 }
 
+// Return the passage of time for the world to normal
 void USlowTimeComponent::OnSlowTimeEnd()
 {
-	// Return the passage of time for the world to normal
 	APlayerController* Controller = UGameplayStatics::GetPlayerController(this, 0);
 	GetWorld()->GetWorldSettings()->SetTimeDilation(1.0f);
 	Controller->GetPawn()->CustomTimeDilation = 1.0f;
@@ -48,48 +40,31 @@ void USlowTimeComponent::OnSlowTimeEnd()
 	GetWorld()->GetTimerManager().SetTimer(SlowTimeHandle, this, &USlowTimeComponent::IncreaseSlowPoints, SlowPointChangeRate, true, 0.2f);
 }
 
+// Increase amount of time the Slow Time ability can run, up to the max stat.
 void USlowTimeComponent::IncreaseSlowPoints()
 {
 	if (CurrentSlowPoints < MaxSlowPoints)
-	{
 		CurrentSlowPoints += 0.05f;
-	}
 	else
-	{
 		CurrentSlowPoints = MaxSlowPoints;
-	}
 }
 
+// Decrease amount of time the Slow Time ability can run, up to the max stat.
 void USlowTimeComponent::DecreaseSlowPoints()
 {
 	if (CurrentSlowPoints > 0.0f)
-	{
 		CurrentSlowPoints -= 0.5f;
-	}
-	else
-	{
+	else {
 		CurrentSlowPoints = 0.0f;
 		OnSlowTimeEnd();
 	}
 }
 
-
-// Called when the game starts
 void USlowTimeComponent::BeginPlay()
 {
 	Super::BeginPlay();
 	
 	OnSlowTimeEnd();
-}
-
-
-// Called every frame
-void USlowTimeComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
-{
-	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-
-	// ...
-
 }
 
 void USlowTimeComponent::ClearSlowTimer()

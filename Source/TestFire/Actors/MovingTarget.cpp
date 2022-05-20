@@ -1,6 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "MovingTarget.h"
 #include "Components/BoxComponent.h"
 
@@ -33,13 +30,9 @@ void AMovingTarget::BeginPlay()
 	Target2Location = Target2->GetComponentLocation();
 
 	if (StartingTarget == ETarget::First)
-	{
 		CurrentLocationTarget = Target1Location;
-	}
 	else
-	{
 		CurrentLocationTarget = Target2Location;
-	}
 }
 
 void AMovingTarget::Tick(float DeltaTime)
@@ -49,16 +42,11 @@ void AMovingTarget::Tick(float DeltaTime)
 	FVector Delta = TargetMesh->GetComponentLocation() - CurrentLocationTarget;
 	float DistanceToPoint = Delta.Size();
 
-	if (DistanceToPoint < 100)
-	{
+	if (DistanceToPoint < 100) {
 		if (CurrentLocationTarget != Target1Location)
-		{
 			CurrentLocationTarget = Target1Location;
-		}
 		else
-		{
 			CurrentLocationTarget = Target2Location;
-		}
 	}
 
 	FVector targetLocation = FMath::VInterpConstantTo(TargetMesh->GetComponentLocation(), CurrentLocationTarget, DeltaTime, InterpSpeed);

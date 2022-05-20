@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -12,6 +10,7 @@ class TESTFIRE_API AExplosiveBarrel : public AActor
 	GENERATED_BODY()
 	
 public:	
+	/***   Variables   ***/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TargetMesh")
 		class UStaticMeshComponent* BarrelMesh;
 
@@ -24,6 +23,12 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TargetAudio")
 		class USoundBase* ExplodingSound;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Effects)
+		UParticleSystem* FireFX;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TargetAudio")
+		class USoundBase* FireSound;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TargetHealth")
 		float Health;
 
@@ -31,7 +36,7 @@ public:
 	float LifeTime;
 	bool bHasExploded;
 
-	// Sets default values for this actor's properties
+	/***   Functions   ***/
 	AExplosiveBarrel();
 
 	UFUNCTION()
@@ -41,9 +46,13 @@ public:
 		void PlayExplosionFX();
 
 	UFUNCTION()
+		void PlayFireFX();
+
+	UFUNCTION()
 		void DestroyBarrel();
 
 protected:
+	/***   Variables   ***/
 	UPROPERTY(EditDefaultsOnly, Category = "Explosive")
 		TSubclassOf<UDamageType> DamageClass;
 
@@ -53,12 +62,7 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Explosive")
 		float BlastRadius;
 
-	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
-
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
-
+	/***   Functions   ***/
 	UFUNCTION()
 		void TakeAnyDamage(AActor* damagedActor, float Damage, const class UDamageType* damageType, class AController* InstigatedBy, AActor* damageCauser);
 

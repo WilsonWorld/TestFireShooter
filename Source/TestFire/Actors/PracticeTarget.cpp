@@ -1,15 +1,10 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "PracticeTarget.h"
 #include "TestFire/Characters/TestFireCharacter.h"
 #include "Components/StaticMeshComponent.h"
 #include "Kismet/GamePlayStatics.h"
 
-// Sets default values
 APracticeTarget::APracticeTarget()
 {
- 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
 	Health = 100.0f;
@@ -30,9 +25,7 @@ void APracticeTarget::IncreasePlayerScore()
 	ATestFireCharacter* pPlayer = Cast<ATestFireCharacter>(pPlayerPawn);
 
 	if (pPlayer)
-	{
 		pPlayer->Score += PointValue;
-	}
 }
 
 void APracticeTarget::TakeAnyDamage(AActor* damagedActor, float Damage, const UDamageType* damageType, AController* InstigatedBy, AActor* damageCauser)
@@ -41,12 +34,10 @@ void APracticeTarget::TakeAnyDamage(AActor* damagedActor, float Damage, const UD
 
 	Health -= Damage;
 
-	if (Health <= 0)
-	{
+	if (Health <= 0) {
 		if (BreakingSound)
-		{
 			UGameplayStatics::PlaySoundAtLocation(this, BreakingSound, GetActorLocation());
-		}
+
 		IncreasePlayerScore();
 		Destroy();
 	}

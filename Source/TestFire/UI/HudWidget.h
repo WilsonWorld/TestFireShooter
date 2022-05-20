@@ -13,7 +13,6 @@ class TESTFIRE_API UHudWidget : public UUserWidget
 	GENERATED_BODY()
 
 	virtual bool Initialize() override;
-
 	virtual void NativeTick(const FGeometry& MyGeometry, float DeltaTime) override;
 
 public:
@@ -22,8 +21,5 @@ public:
 	void DisplayAmmo();
 	void DisplayExplosives();
 	void DisplayScore();
-
-	void UpdateReticle();
-
 	class ATestFireCharacter* GetPlayer();
 };

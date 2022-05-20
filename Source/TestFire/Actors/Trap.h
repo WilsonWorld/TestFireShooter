@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -37,8 +35,5 @@ protected:
 
 	UFUNCTION()
 		void EndOverlap(UPrimitiveComponent* OverlapComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
-
-	virtual void BeginPlay() override;
-	virtual void Tick(float DeltaTime) override;
 
 };

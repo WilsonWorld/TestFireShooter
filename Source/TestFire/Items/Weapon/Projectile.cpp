@@ -1,9 +1,7 @@
-// Fill out your copyright notice in the Description page of Project Settings.
 // Test Fire is a simple 3D shooter created by Wilson Worlds, intended to build familiarity with the unreal engine and game design for 'Shooters'. June 22nd, 2021.
 
 #include "Projectile.h"
 #include "TestFire/Characters/TestFireCharacter.h"
-
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetSystemLibrary.h"
 
@@ -11,7 +9,7 @@ AProjectile::AProjectile()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
-	// Default properties
+	// Projectile default properties
 	Damage = 10.0f;
 	Speed = 4000.0f;
 	LifeTime = 2.0f;
@@ -49,14 +47,10 @@ void AProjectile::OnActorHit(AActor* Self, AActor* Other, FVector NormalImpulse,
 {
 	// Cause damage to the hit actor
 	if (Other)
-	{
 		UGameplayStatics::ApplyDamage(Other, Damage, nullptr, this, DamageClass);
-	}
 
 	if (ImpactFX)
-	{
 		UGameplayStatics::SpawnEmitterAtLocation(this, ImpactFX, GetActorLocation());
-	}
 
 	Destroy();
 }

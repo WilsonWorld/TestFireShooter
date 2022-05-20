@@ -118,19 +118,21 @@ void ATestFireCharacter::Tick(float DeltaTime)
 
 	const bool bHasWeapon = CurrentWeapon != nullptr;
 	GetCharacterMovement()->bOrientRotationToMovement = true;
-
-	if (CurrentHealth <= 0) {
-		if (CurrentWeapon)
-			CurrentWeapon->UnEquip();
-
-		Destroy();
-	}
 }
 
 void ATestFireCharacter::TakeAnyDamage(AActor* damagedActor, float Damage, const UDamageType* damageType, AController* InstigatedBy, AActor* damageCauser)
 {
 	GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Orange, FString::Printf(TEXT("taken %.2f damage"), Damage));
 	CurrentHealth -= Damage;
+
+	if (CurrentHealth <= 0) {
+		if (CurrentWeapon)
+			CurrentWeapon->UnEquip();
+
+		FTimerHandle DestroyTimer;
+		float DestroyTime = 1.0f;
+		GetWorldTimerManager().SetTimer(DestroyTimer, this, &ATestFireCharacter::DestroySelf, DestroyTime, false, 0.0f);
+	}
 }
 
 // Starts firing the weapon
@@ -326,6 +328,14 @@ void ATestFireCharacter::Interact()
 				}
 		}
 	}
+}
+
+void ATestFireCharacter::DestroySelf()
+{
+	FTimerHandle DestroyTimer;
+	float DestroyTime = 1.0f;
+	GetWorldTimerManager().SetTimer(DestroyTimer, this, &ATestFireCharacter::DestroySelf, DestroyTime, false, 0.0f);
+	Destroy();
 }
 
 // Quickly ends the game for the user 

@@ -1,10 +1,9 @@
-// Fill out your copyright notice in the Description page of Project Settings.
 // Test Fire is a simple 3D shooter created by Wilson Worlds, intended to build familiarity with the unreal engine and game design for 'Shooters'. June 22nd, 2021.
 
 #include "Item.h"
 #include "Components/SphereComponent.h"
 
-// Sets default values
+
 AItem::AItem()
 {
     SphereCollision = CreateDefaultSubobject<USphereComponent>(TEXT("SphereComponent"));
